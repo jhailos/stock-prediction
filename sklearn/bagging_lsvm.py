@@ -4,6 +4,8 @@ import numpy as np
 import sklearn
 from sklearn.svm import LinearSVR
 from sklearn.ensemble import BaggingClassifier
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
 import datetime
 """
 
@@ -43,8 +45,15 @@ def data_preprocessing(data):
     data['y'] = y
     #! Added drop NA but paper says to : "use the method of imputing with the prior existing values to handle missing values"
     x = data[['Open', 'High', 'Low', 'Close', 'Adj Close', 'Volume', 'EMA12', 'EMA26', 'MACD', 'MACD_signal']].dropna()
-    
-    return x,y
+
+    return x, y
+
+def scale_data(x_train, x_test):
+    scaler = StandardScaler()
+    x_train_scaled = scaler.fit_transform(x_train)
+    x_test_scaled = scaler.transform(x_test)
+
+    return x_train_scaled, x_test_scaled
 
 def main():
     # Main function to run the analysis
@@ -58,8 +67,12 @@ def main():
 
     # Pre proc
     x, y = data_preprocessing(data)
-    
-    model = train_model(x, y)
+
+    x_train, x_test, y_train, y_test = train_test_split(x, y)
+
+    x_train_scaled, x_train_scaled = scale_data(x_train, x_test)
+
+    model = train_model(x_train_scaled, y_train)
 
 
 if __name__ == "__main__":
