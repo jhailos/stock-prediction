@@ -3,15 +3,16 @@ import pandas as pd
 import numpy as np
 import datetime
 
-import sklearn
 from sklearn.svm import LinearSVR
+from sklearn.linear_model import LinearRegression
+from sklearn.ensemble import StackingRegressor
+from sklearn.ensemble import RandomForestRegressor
 from sklearn.ensemble import BaggingRegressor
-from sklearn.preprocessing import StandardScaler
+from sklearn.ensemble import AdaBoostRegressor
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error, r2_score
-"""
 
-"""
 def download_data(ticker, interval='5m'):
     """Fetch data from yfinance
     """
@@ -23,14 +24,14 @@ def download_data(ticker, interval='5m'):
     return data
 
 def compute_features(data):
-    # EMA
+    # EMA x2
     data['EMA12'] = data['Close'].ewm(span=12).mean()
     data['EMA26'] = data['Close'].ewm(span=26).mean()
 
-    # MACD
+    # MACD x3
     data['MACD'] = data['EMA12'] + data['EMA26']
 
-    # MACD signal
+    # MACD signal x4
     data['MACD_signal'] = data['MACD'].ewm(span=9).mean()
 
     # Price change
@@ -42,13 +43,6 @@ def compute_features(data):
     data.dropna(inplace=True)
 
     return data
-
-def train_model(x_train, y_train):
-    linear_SVR = LinearSVR(max_iter=1000000) #! Unsure max_iter
-    bagging_model = BaggingRegressor(estimator=linear_SVR, n_estimators=100)
-    bagging_model.fit(x_train, y_train) #! REVIEW
-
-    return bagging_model
 
 def data_preprocessing(data):
     y = data['Close'].shift(-1) # Y is value to predict (price in the next interval)
@@ -63,6 +57,15 @@ def scale_data(x_train, x_test, scaler):
     x_test_scaled = scaler.transform(x_test)
 
     return x_train_scaled, x_test_scaled
+
+def train_model(x_train, y_test, estimators):
+    reg = StackingRegressor(
+        estimators=estimators,
+        final_estimator=LinearRegression()
+    )
+    reg.fit(x_train, y_test)
+    
+    return reg
 
 def model_eval(model, x_test, y_test):
     prediction = model.predict(x_test)
@@ -92,20 +95,25 @@ def main():
     # Pre proc
     x, y = data_preprocessing(data)
 
+    estimators = [
+        ('rf', RandomForestRegressor(n_estimators=100)),
+        ('bag', BaggingRegressor(n_estimators=100)),
+        ('ada', AdaBoostRegressor(n_estimators=100))
+    ]
 
     # Scaler
     scaler = StandardScaler()
     x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2)
-
     x_train_scaled, x_test_scaled = scale_data(x_train, x_test, scaler)
 
-    model = train_model(x_train_scaled, y_train)
+    model = train_model(x_train, y_train, estimators)
 
     rmse, r2 = model_eval(model, x_test_scaled, y_test)
     print("RMSE: ", rmse)
     print("R2: ", r2)
     print(data.index[-1] + datetime.timedelta(minutes=5))
     print("Price in next interval: ", next_closing(data, model, scaler))
+
 
 if __name__ == "__main__":
     main()
