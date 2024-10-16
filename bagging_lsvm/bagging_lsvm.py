@@ -44,7 +44,7 @@ def compute_features(data):
     return data
 
 def train_model(x_train, y_train):
-    linear_SVR = LinearSVR(max_iter=100000) #! Unsure max_iter
+    linear_SVR = LinearSVR(max_iter=1000000) #! Unsure max_iter
     bagging_model = BaggingRegressor(estimator=linear_SVR, n_estimators=100)
     bagging_model.fit(x_train, y_train)
 
@@ -104,6 +104,7 @@ def main():
     rmse, r2 = model_eval(model, x_test_scaled, y_test)
     print("RMSE: ", rmse)
     print("R2: ", r2)
+    print(data.index[-1] + datetime.timedelta(minutes=5))
     print("Price in next interval: ", next_closing(data, model, scaler))
 
 if __name__ == "__main__":
