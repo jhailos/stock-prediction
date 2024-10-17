@@ -3,12 +3,13 @@ import pandas as pd
 import numpy as np
 import datetime
 
-from sklearn.svm import LinearSVR
+from sklearn.svm import SVR
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import StackingRegressor
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.ensemble import BaggingRegressor
 from sklearn.ensemble import AdaBoostRegressor
+from xgboost import XGBRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error, r2_score
@@ -97,8 +98,9 @@ def main():
 
     estimators = [
         ('rf', RandomForestRegressor(n_estimators=100)),
-        ('bag', BaggingRegressor(n_estimators=100)),
-        ('ada', AdaBoostRegressor(n_estimators=100))
+        ('svr', SVR(kernel='linear')),
+        ('ada', AdaBoostRegressor(n_estimators=100)),
+        ('xgb', XGBRegressor(n_estimators=100))
     ]
 
     # Scaler
