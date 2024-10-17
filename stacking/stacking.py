@@ -41,17 +41,15 @@ def compute_features(data):
     # Previous closing price
     data['previous_close'] = data['Close'].shift(1)
     
-    data.dropna(inplace=True)
+    data.dropna(inplace=True) #! Added drop NA but paper says to : "use the method of imputing with the prior existing values to handle missing values"
 
     return data
 
 def data_preprocessing(data):
-    y = data['Close'].shift(-1) # Y is value to predict (price in the next interval)
-    data['y'] = y
-    data.dropna(inplace=True) #! Added drop NA but paper says to : "use the method of imputing with the prior existing values to handle missing values"
     x = data[['EMA12', 'EMA26', 'MACD', 'MACD_signal', 'price_change', 'previous_close']]
+    y = data['Close']
 
-    return x, data['y']
+    return x, y
 
 def scale_data(x_train, x_test, scaler):
     x_train_scaled = scaler.fit_transform(x_train)
@@ -59,19 +57,27 @@ def scale_data(x_train, x_test, scaler):
 
     return x_train_scaled, x_test_scaled
 
-def train_model(x_train, y_test, estimators):
-    reg = StackingRegressor(
-        estimators=estimators,
-        final_estimator=LinearRegression()
-    )
-    reg.fit(x_train, y_test)
+def train_model(x_train, y_train):
+    estimators = [
+        ('rf', RandomForestRegressor(n_estimators=100)),
+        ('svr', SVR(kernel='linear')),
+        ('ada', AdaBoostRegressor(n_estimators=100)),
+        ('xgb', XGBRegressor(n_estimators=100))
+    ]
     
-    return reg
+    model = StackingRegressor(
+        estimators=estimators, final_estimator=LinearRegression()
+    )
+    
+    # Train Stacking Model
+    model.fit(x_train, y_train)
+    
+    return model
 
 def model_eval(model, x_test, y_test):
     prediction = model.predict(x_test)
     rmse = np.sqrt(mean_squared_error(y_test, prediction))
-    r_squared = r2_score(y_test, prediction)
+    r_squared = model.score(x_test, y_test)
 
     return rmse, r_squared
 
@@ -96,19 +102,12 @@ def main():
     # Pre proc
     x, y = data_preprocessing(data)
 
-    estimators = [
-        ('rf', RandomForestRegressor(n_estimators=100)),
-        ('svr', SVR(kernel='linear')),
-        ('ada', AdaBoostRegressor(n_estimators=100)),
-        ('xgb', XGBRegressor(n_estimators=100))
-    ]
-
     # Scaler
     scaler = StandardScaler()
     x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2)
     x_train_scaled, x_test_scaled = scale_data(x_train, x_test, scaler)
 
-    model = train_model(x_train, y_train, estimators)
+    model = train_model(x_train, y_train)
 
     rmse, r2 = model_eval(model, x_test_scaled, y_test)
     print("RMSE: ", rmse)
