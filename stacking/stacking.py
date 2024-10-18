@@ -5,7 +5,7 @@ import datetime
 
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.metrics import root_mean_squared_error, r2_score
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import StackingRegressor
 from sklearn.ensemble import RandomForestRegressor
@@ -88,7 +88,7 @@ class StackingModel:
 
     def model_eval(self, model, x_test, y_test):
         prediction = model.predict(x_test)
-        rmse = np.sqrt(mean_squared_error(y_test, prediction))
+        rmse = root_mean_squared_error(y_test, prediction)
         r_squared = r2_score(y_test, prediction)
 
         return rmse, r_squared
