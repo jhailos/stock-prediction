@@ -3,18 +3,19 @@ import pandas as pd
 import numpy as np
 import datetime
 
-from sklearn.svm import SVR
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import StackingRegressor
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.ensemble import BaggingRegressor
 from sklearn.ensemble import AdaBoostRegressor
+from sklearn.svm import SVR
 from xgboost import XGBRegressor
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import mean_squared_error, r2_score
+"""
 
-def download_data(ticker, interval='5m'):
+"""
+def download_data(ticker, interval='15m'):
     """Fetch data from yfinance
     """
     end_date = datetime.datetime.now()
@@ -25,14 +26,14 @@ def download_data(ticker, interval='5m'):
     return data
 
 def compute_features(data):
-    # EMA x2
+    # EMA
     data['EMA12'] = data['Close'].ewm(span=12).mean()
     data['EMA26'] = data['Close'].ewm(span=26).mean()
 
-    # MACD x3
+    # MACD
     data['MACD'] = data['EMA12'] + data['EMA26']
 
-    # MACD signal x4
+    # MACD signal
     data['MACD_signal'] = data['MACD'].ewm(span=9).mean()
 
     # Price change
@@ -41,21 +42,9 @@ def compute_features(data):
     # Previous closing price
     data['previous_close'] = data['Close'].shift(1)
     
-    data.dropna(inplace=True) #! Added drop NA but paper says to : "use the method of imputing with the prior existing values to handle missing values"
+    data.dropna(inplace=True)
 
     return data
-
-def data_preprocessing(data):
-    x = data[['EMA12', 'EMA26', 'MACD', 'MACD_signal', 'price_change', 'previous_close']]
-    y = data['Close']
-
-    return x, y
-
-def scale_data(x_train, x_test, scaler):
-    x_train_scaled = scaler.fit_transform(x_train)
-    x_test_scaled = scaler.transform(x_test)
-
-    return x_train_scaled, x_test_scaled
 
 def train_model(x_train, y_train):
     estimators = [
@@ -66,7 +55,7 @@ def train_model(x_train, y_train):
     ]
     
     model = StackingRegressor(
-        estimators=estimators, final_estimator=LinearRegression()
+        estimators=estimators, final_estimator=RandomForestRegressor()
     )
     
     # Train Stacking Model
@@ -74,10 +63,24 @@ def train_model(x_train, y_train):
     
     return model
 
+def data_preprocessing(data):
+    y = data['Close'].shift(-1) # Y is value to predict (price in the next interval)
+    data['y'] = y
+    data.dropna(inplace=True) #! Added drop NA but paper says to : "use the method of imputing with the prior existing values to handle missing values"
+    x = data[['EMA12', 'EMA26', 'MACD', 'MACD_signal', 'price_change', 'previous_close']]
+
+    return x, data['y']
+
+def scale_data(x_train, x_test, scaler):
+    x_train_scaled = scaler.fit_transform(x_train)
+    x_test_scaled = scaler.transform(x_test)
+
+    return x_train_scaled, x_test_scaled
+
 def model_eval(model, x_test, y_test):
     prediction = model.predict(x_test)
     rmse = np.sqrt(mean_squared_error(y_test, prediction))
-    r_squared = model.score(x_test, y_test)
+    r_squared = r2_score(y_test, prediction)
 
     return rmse, r_squared
 
@@ -105,16 +108,16 @@ def main():
     # Scaler
     scaler = StandardScaler()
     x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2)
+
     x_train_scaled, x_test_scaled = scale_data(x_train, x_test, scaler)
 
-    model = train_model(x_train, y_train)
+    model = train_model(x_train_scaled, y_train)
 
     rmse, r2 = model_eval(model, x_test_scaled, y_test)
     print("RMSE: ", rmse)
     print("R2: ", r2)
     print(data.index[-1] + datetime.timedelta(minutes=5))
     print("Price in next interval: ", next_closing(data, model, scaler))
-
 
 if __name__ == "__main__":
     main()
