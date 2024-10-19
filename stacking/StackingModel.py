@@ -121,7 +121,8 @@ class StackingModel:
             '1d': pd.Timedelta(days=1),
             '1h': pd.Timedelta(hours=1),
             '15m': pd.Timedelta(minutes=15),
-            '5m': pd.Timedelta(minutes=5)
+            '5m': pd.Timedelta(minutes=5),
+            '1m': pd.Timedelta(minutes=1)
         }
 
         if self.interval in interval_mapping:
