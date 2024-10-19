@@ -25,6 +25,7 @@ class StackingModel:
         self.interval = interval
         self.estimators = estimators
         self.final_estimator = final_estimator
+        self.data = self.download_data()
         if self.estimators == None:
             self.estimators = [
                 ('rf', RandomForestRegressor(n_estimators=100)),
@@ -34,6 +35,8 @@ class StackingModel:
             ]
         if self.final_estimator == None:
             self.final_estimator = RandomForestRegressor()
+        self.rmse = 0
+        self.r2 = 0
 
     def download_data(self):
         """Fetch data from yfinance
@@ -44,24 +47,22 @@ class StackingModel:
         data = yf.download(self.ticker, start=start_date, end=end_date, interval=self.interval)
         return data
 
-    def compute_features(self, data):
+    def compute_features(self):
         # EMA
-        data['EMA12'] = data['Close'].ewm(span=12).mean()
-        data['EMA26'] = data['Close'].ewm(span=26).mean()
+        self.data['EMA12'] = self.data['Close'].ewm(span=12).mean()
+        self.data['EMA26'] = self.data['Close'].ewm(span=26).mean()
 
         # MACD
-        data['MACD'] = data['EMA12'] + data['EMA26']
+        self.data['MACD'] = self.data['EMA12'] + self.data['EMA26']
 
         # MACD signal
-        data['MACD_signal'] = data['MACD'].ewm(span=9).mean()
+        self.data['MACD_signal'] = self.data['MACD'].ewm(span=9).mean()
 
         # Price change
-        data['price_change'] = data['Close'].pct_change()
+        self.data['price_change'] = self.data['Close'].pct_change()
 
         # Previous closing price
-        data['previous_close'] = data['Close'].shift(1)
-
-        return data
+        self.data['previous_close'] = self.data['Close'].shift(1)
 
     def train_model(self, x_train, y_train):
         pipeline = Pipeline([
@@ -77,12 +78,12 @@ class StackingModel:
         return pipeline
 
     def data_preprocessing(self, data):
-        y = data['Close'].shift(-1) # Y is value to predict (price in the next interval)
-        data['y'] = y
-        data.dropna(inplace=True) #! Added drop NA but paper says to : "use the method of imputing with the prior existing values to handle missing values"
-        x = data[['EMA12', 'EMA26', 'MACD', 'MACD_signal', 'price_change', 'previous_close']]
+        y = self.data['Close'].shift(-1) # Y is value to predict (price in the next interval)
+        self.data['y'] = y
+        self.data.dropna(inplace=True) #! Added drop NA but paper says to : "use the method of imputing with the prior existing values to handle missing values"
+        x = self.data[['EMA12', 'EMA26', 'MACD', 'MACD_signal', 'price_change', 'previous_close']]
 
-        return x, data['y']
+        return x, self.data['y']
 
     def scale_data(self, x_train, x_test, scaler):
         x_train_scaled = scaler.fit_transform(x_train)
@@ -97,8 +98,8 @@ class StackingModel:
 
         return rmse, r_squared
 
-    def next_closing(self, data, model, scaler):
-        most_recent = data.iloc[-1][['EMA12', 'EMA26', 'MACD', 'MACD_signal', 'price_change', 'previous_close']].values.reshape(1, -1)
+    def next_closing(self, model, scaler):
+        most_recent = self.data.iloc[-1][['EMA12', 'EMA26', 'MACD', 'MACD_signal', 'price_change', 'previous_close']].values.reshape(1, -1)
         scaled = scaler.transform(most_recent)
         
         prediction = model.predict(scaled)
@@ -106,14 +107,11 @@ class StackingModel:
         return prediction[0]
     
     def run(self):
-        # Download data
-        data = self.download_data()
-
         # Compute features
-        data = self.compute_features(data)
+        self.compute_features()
 
         # Pre process
-        x, y = self.data_preprocessing(data)
+        x, y = self.data_preprocessing()
 
         # Scaler
         scaler = StandardScaler()
@@ -125,14 +123,14 @@ class StackingModel:
         model = self.train_model(x_train_scaled, y_train)
 
         # Evaluate model
-        rmse, r2 = self.model_eval(model, x_test_scaled, y_test)
+        self.rmse, self.r2 = self.model_eval(model, x_test_scaled, y_test)
 
         # Inference
-        prediction_time = data.index[-1] + datetime.timedelta(minutes=5)
-        predicted_price = self.next_closing(data, model, scaler)
+        prediction_time = self.data.index[-1] + datetime.timedelta(minutes=15)
+        predicted_price = self.next_closing(model, scaler)
 
-        print("RMSE: ", rmse)
-        print("R2: ", r2)
+        print("RMSE: ", self.rmse)
+        print("R2: ", self.r2)
         print(prediction_time)
         print("Price in next interval: ", predicted_price)
 
