@@ -53,6 +53,8 @@ class StackingModel:
         start_date = end_date - datetime.timedelta(days=59)
 
         data = yf.download(self.ticker, start=start_date, end=end_date, interval=self.interval)
+        data = data.ffill() #* replace NaNs with the previous valid data
+
         return data
 
     def compute_features(self):
@@ -88,7 +90,7 @@ class StackingModel:
     def data_preprocessing(self):
         y = self.data['Close'].shift(-1) # Y is value to predict (price in the next interval)
         self.data['y'] = y
-        self.data.dropna(inplace=True) #! Added drop NA but paper says to : "use the method of imputing with the prior existing values to handle missing values"
+        self.data.dropna(inplace=True)
         x = self.data[['EMA12', 'EMA26', 'MACD', 'MACD_signal', 'price_change', 'previous_close']]
 
         return x, self.data['y']
