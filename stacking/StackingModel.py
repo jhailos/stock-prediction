@@ -85,7 +85,7 @@ class StackingModel:
         
         return pipeline
 
-    def data_preprocessing(self, data):
+    def data_preprocessing(self):
         y = self.data['Close'].shift(-1) # Y is value to predict (price in the next interval)
         self.data['y'] = y
         self.data.dropna(inplace=True) #! Added drop NA but paper says to : "use the method of imputing with the prior existing values to handle missing values"
@@ -106,13 +106,37 @@ class StackingModel:
 
         return rmse, r_squared
 
-    def next_closing(self, model, scaler):
+    def timedelta_interval(self):
+        interval_mapping = {
+            '1d': pd.Timedelta(days=1),
+            '1h': pd.Timedelta(hours=1),
+            '15m': pd.Timedelta(minutes=15),
+            '5m': pd.Timedelta(minutes=5)
+        }
+
+        if self.interval in interval_mapping:
+            return interval_mapping[self.interval]
+        else:
+            raise ValueError("Interval mapping not found for the specified interval")
+
+
+    def next_closing(self, model, scaler, steps=1):
         most_recent = self.data.iloc[-1][['EMA12', 'EMA26', 'MACD', 'MACD_signal', 'price_change', 'previous_close']].values.reshape(1, -1)
+        
         scaled = scaler.transform(most_recent)
         
-        prediction = model.predict(scaled)
-
-        return prediction[0]
+        # Predict closing price at future interval
+        future_data = []
+        future_timestamps = [self.data.index[-1]]  # Timestamps of the most recent data
+        for _ in range(steps):
+            prediction = model.predict(scaled)
+            future_data.append(prediction[0])
+            future_timestamps.append(future_timestamps[-1] + self.timedelta_interval())
+            
+            # Update the scaled data with the new prediction
+            scaled = np.append(scaled[0, 1:], prediction).reshape(1, -1)
+        
+        return future_timestamps, future_data[-1]
     
     def run(self):
         # Compute features
@@ -134,13 +158,11 @@ class StackingModel:
         self.rmse, self.r2 = self.model_eval(model, x_test_scaled, y_test)
 
         # Inference
-        prediction_time = self.data.index[-1] + datetime.timedelta(minutes=15)
-        predicted_price = self.next_closing(model, scaler)
+        prediction_time, predicted_price = self.next_closing(model, scaler)
 
         print("RMSE: ", self.rmse)
         print("R2: ", self.r2)
-        print(prediction_time)
-        print("Price in next interval: ", predicted_price)
+        print(f"Price in next interval ({prediction_time[-1]}): {predicted_price}")
 
         # return [rmse, r2, prediction_time, predicted_price]
         # return predicted_price
