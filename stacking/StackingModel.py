@@ -96,8 +96,8 @@ class StackingModel:
         return x, self.data['y']
 
     def scale_data(self, x_train, x_test, scaler):
-        x_train_scaled = scaler.fit_transform(x_train)
-        x_test_scaled = scaler.transform(x_test)
+        x_train_scaled = pd.DataFrame(scaler.fit_transform(x_train), columns=x_train.columns, index=x_train.index)
+        x_test_scaled = pd.DataFrame(scaler.transform(x_test), columns=x_test.columns, index=x_test.index)
 
         return x_train_scaled, x_test_scaled
 
@@ -142,20 +142,20 @@ class StackingModel:
         - future_timestamps (list): Timestamps of the predicted closing prices
         - predicted_closing_price (float): Predicted closing price at the last future interval
         """
-        most_recent = self.data.iloc[-1][['EMA12', 'EMA26', 'MACD', 'MACD_signal', 'price_change', 'previous_close']].values.reshape(1, -1)
+        most_recent = pd.DataFrame([self.data.iloc[-1][['EMA12', 'EMA26', 'MACD', 'MACD_signal', 'price_change', 'previous_close']]])
         
-        scaled = scaler.transform(most_recent)
+        most_recent_scaled = pd.DataFrame(scaler.transform(most_recent), columns=most_recent.columns)
         
         # Predict closing price at future interval
         future_data = []
         future_timestamps = [self.data.index[-1]]  # Timestamps of the most recent data
         for _ in range(steps):
-            prediction = model.predict(scaled)
+            prediction = model.predict(most_recent_scaled)
             future_data.append(prediction[0])
             future_timestamps.append(future_timestamps[-1] + self.timedelta_interval())
             
             # Update the scaled data with the new prediction
-            scaled = np.append(scaled[0, 1:], prediction).reshape(1, -1)
+            most_recent_scaled.iloc[0, -1] = prediction
         
         return future_timestamps, future_data[-1]
     
