@@ -91,8 +91,8 @@ class StackingModel:
 
         return x_train_scaled, x_test_scaled
 
-    def model_eval(self, x_test, y_test):
-        prediction = self.model.predict(x_test)
+    def model_eval(self, model, x_test, y_test):
+        prediction = model.predict(x_test)
         rmse = root_mean_squared_error(y_test, prediction)
         r_squared = r2_score(y_test, prediction)
 
@@ -126,9 +126,10 @@ class StackingModel:
         model = self.train_model(x_train_scaled, y_train)
 
         # Evaluate model
-        rmse, r2 = self.model_eval(x_test_scaled, y_test)
+        rmse, r2 = self.model_eval(model, x_test_scaled, y_test)
 
         # Inference
+        print(data)
         prediction_time = data.index[-1] + datetime.timedelta(minutes=5)
         predicted_price = self.next_closing(data, model, scaler)
 
