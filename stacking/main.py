@@ -4,7 +4,7 @@ import time
 
 def main():
     start_time = time.time()
-    model = StackingModel("BA", "15m")
+    model = StackingModel("NVDX", "5m")
 
     model.run()
 
