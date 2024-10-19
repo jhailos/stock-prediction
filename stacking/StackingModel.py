@@ -42,7 +42,6 @@ class StackingModel:
         start_date = end_date - datetime.timedelta(days=59)
 
         data = yf.download(self.ticker, start=start_date, end=end_date, interval=self.interval)
-        print(data)
         return data
 
     def compute_features(self, data):
@@ -129,7 +128,6 @@ class StackingModel:
         rmse, r2 = self.model_eval(model, x_test_scaled, y_test)
 
         # Inference
-        print(data)
         prediction_time = data.index[-1] + datetime.timedelta(minutes=5)
         predicted_price = self.next_closing(data, model, scaler)
 
