@@ -21,6 +21,14 @@ class StackingModel:
     """
 
     def __init__(self, ticker: str, interval: str, estimators=None, final_estimator=None):
+        """_summary_
+
+        Args:
+            ticker (str): Ticker of the stock
+            interval (str): Interval at which the data is taken
+            estimators (list, optional): List of estimators. Defaults to random forest, svr, adaboost, xgboost.
+            final_estimator (_type_, optional): Final estimator. Defaults to sklearn.linear_model.LinearRegression.
+        """
         self.ticker = ticker
         self.interval = interval
         self.estimators = estimators
@@ -34,7 +42,7 @@ class StackingModel:
                 ('xgb', XGBRegressor(n_estimators=100))
             ]
         if self.final_estimator == None:
-            self.final_estimator = RandomForestRegressor()
+            self.final_estimator = LinearRegression()
         self.rmse = 0
         self.r2 = 0
 
