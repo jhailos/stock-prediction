@@ -2,6 +2,7 @@ import yfinance as yf
 import pandas as pd
 import numpy as np
 import datetime
+import concurrent.futures
 
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
@@ -12,10 +13,12 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.ensemble import AdaBoostRegressor
 from sklearn.svm import SVR
 from xgboost import XGBRegressor
-"""
 
-"""
 class StackingModel:
+    """
+    
+    """
+
     def __init__(self, ticker: str, interval: str, estimators=None, final_estimator=None):
         self.ticker = ticker
         self.interval = interval
@@ -38,7 +41,6 @@ class StackingModel:
         start_date = end_date - datetime.timedelta(days=59)
 
         data = yf.download(self.ticker, start=start_date, end=end_date, interval=self.interval)
-        data.dropna(inplace=True)
         return data
 
     def compute_features(self, data):
@@ -57,8 +59,6 @@ class StackingModel:
 
         # Previous closing price
         data['previous_close'] = data['Close'].shift(1)
-        
-        data.dropna(inplace=True)
 
         return data
 
@@ -108,7 +108,7 @@ class StackingModel:
         # Compute features
         data = self.compute_features(data)
 
-        # Pre proc
+        # Pre process
         x, y = self.data_preprocessing(data)
 
         # Scaler
@@ -117,17 +117,18 @@ class StackingModel:
 
         x_train_scaled, x_test_scaled = self.scale_data(x_train, x_test, scaler)
 
+        # Train model
         model = self.train_model(x_train_scaled, y_train)
 
+        # Evaluate model
         rmse, r2 = self.model_eval(model, x_test_scaled, y_test)
+        prediction_time = data.index[-1] + datetime.timedelta(minutes=5)
+        predicted_price = self.next_closing(data, model, scaler)
+
         print("RMSE: ", rmse)
         print("R2: ", r2)
-        print(data.index[-1] + datetime.timedelta(minutes=5))
-        print("Price in next interval: ", self.next_closing(data, model, scaler))
+        print(prediction_time)
+        print("Price in next interval: ", predicted_price)
 
-def main():
-    model = StackingModel("NVDX", "15m")
-    model.run()
-
-if __name__ == "__main__":
-    main()
+        # return [rmse, r2, prediction_time, predicted_price]
+        # return predicted_price
