@@ -107,6 +107,14 @@ class StackingModel:
         return rmse, r_squared
 
     def timedelta_interval(self):
+        """Converts the `self.interval` string to pd.Timedelta 
+
+        Raises:
+            ValueError: If the interval is not found
+
+        Returns:
+            pd.Timedelta: The converted timedelta
+        """
         interval_mapping = {
             '1d': pd.Timedelta(days=1),
             '1h': pd.Timedelta(hours=1),
@@ -121,6 +129,17 @@ class StackingModel:
 
 
     def next_closing(self, model, scaler, steps=1):
+        """Predicts the closing price at future intervals.
+
+        Parameters:
+        - model: Trained model for prediction
+        - scaler: StandardScaler object for data scaling
+        - steps (int): Number of future intervals to predict. Defaults to 1 step
+
+        Returns:
+        - future_timestamps (list): Timestamps of the predicted closing prices
+        - predicted_closing_price (float): Predicted closing price at the last future interval
+        """
         most_recent = self.data.iloc[-1][['EMA12', 'EMA26', 'MACD', 'MACD_signal', 'price_change', 'previous_close']].values.reshape(1, -1)
         
         scaled = scaler.transform(most_recent)
