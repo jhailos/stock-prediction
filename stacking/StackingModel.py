@@ -4,6 +4,7 @@ import numpy as np
 import datetime
 import concurrent.futures
 
+from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import root_mean_squared_error, r2_score
@@ -41,6 +42,7 @@ class StackingModel:
         start_date = end_date - datetime.timedelta(days=59)
 
         data = yf.download(self.ticker, start=start_date, end=end_date, interval=self.interval)
+        print(data)
         return data
 
     def compute_features(self, data):
@@ -63,14 +65,17 @@ class StackingModel:
         return data
 
     def train_model(self, x_train, y_train):
-        model = StackingRegressor(
-            estimators=self.estimators, final_estimator=self.final_estimator
-        )
+        pipeline = Pipeline([
+            ('scaler', StandardScaler()),
+            ('stacking', StackingRegressor(
+                estimators=self.estimators, final_estimator=self.final_estimator
+            ))
+        ])
         
         # Train Stacking Model
-        model.fit(x_train, y_train)
+        pipeline.fit(x_train, y_train)
         
-        return model
+        return pipeline
 
     def data_preprocessing(self, data):
         y = data['Close'].shift(-1) # Y is value to predict (price in the next interval)
@@ -86,8 +91,8 @@ class StackingModel:
 
         return x_train_scaled, x_test_scaled
 
-    def model_eval(self, model, x_test, y_test):
-        prediction = model.predict(x_test)
+    def model_eval(self, x_test, y_test):
+        prediction = self.model.predict(x_test)
         rmse = root_mean_squared_error(y_test, prediction)
         r_squared = r2_score(y_test, prediction)
 
@@ -121,7 +126,9 @@ class StackingModel:
         model = self.train_model(x_train_scaled, y_train)
 
         # Evaluate model
-        rmse, r2 = self.model_eval(model, x_test_scaled, y_test)
+        rmse, r2 = self.model_eval(x_test_scaled, y_test)
+
+        # Inference
         prediction_time = data.index[-1] + datetime.timedelta(minutes=5)
         predicted_price = self.next_closing(data, model, scaler)
 
