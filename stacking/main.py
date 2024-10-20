@@ -6,6 +6,7 @@ import pandas as pd
 import datetime
 import yaml
 import json
+import os
 
 def download_data(ticker):
     url = "https://api.finazon.io/latest/finazon/us_stocks_essential/time_series"
@@ -35,14 +36,18 @@ def download_data(ticker):
     df['Date'] = pd.to_datetime(df['Date'])
     df.set_index('Date', inplace=True)
 
-    df.to_csv(f'stock_data\{ticker}.txt')
+    outdir = "stock_data"
+    outfile = f"{ticker}.csv"
+    if not os.path.exists(outdir):
+        os.mkdir(outdir)
+    df.to_csv(os.path.join(outdir, outfile))
 
 def get_csv(ticker):
-    df = pd.read_csv(f'stock_data\{ticker}.txt', index_col='Date', parse_dates=True)
+    df = pd.read_csv(f'stock_data\{ticker}.csv', index_col='Date', parse_dates=True)
 
 def main():
     ticker = 'AAPL'
-    # download_data(ticker)
+    download_data(ticker)
     get_csv(ticker)
     start_time = time.time()
     model = StackingModel(ticker, "5m", data=get_csv(ticker))
