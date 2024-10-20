@@ -181,8 +181,9 @@ class StackingModel:
 
         # Inference
         prediction_time, predicted_price = self.next_closing(model, scaler)
-
+        rrmse = self.rmse/self.data['Close'].mean() * 100
         print("RMSE: ", self.rmse)
+        print(f"RRMSE: {rrmse:.4f}%")
         print("R2: ", self.r2)
         print(f"Price in next interval ({prediction_time[-1]}): {predicted_price}")
 
