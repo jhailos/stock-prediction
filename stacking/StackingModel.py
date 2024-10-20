@@ -33,6 +33,7 @@ class StackingModel:
         self.interval = interval
         self.estimators = estimators
         self.final_estimator = final_estimator
+        self.data = data
         if data == None:
             self.data = self.download_data()
         
@@ -56,7 +57,7 @@ class StackingModel:
 
         data = yf.download(self.ticker, start=start_date, end=end_date, interval=self.interval)
         data = data.ffill() #* replace NaNs with the previous valid data
-
+        print("Data size: ", data.shape[0])
         return data
 
     def compute_features(self):
