@@ -20,7 +20,7 @@ class StackingModel:
     
     """
 
-    def __init__(self, ticker: str, interval: str, estimators=None, final_estimator=None, data=None):
+    def __init__(self, data, interval, estimators=None, final_estimator=None):
         """_summary_
 
         Args:
@@ -29,13 +29,10 @@ class StackingModel:
             estimators (list, optional): List of estimators. Defaults to random forest, svr, adaboost, xgboost.
             final_estimator (_type_, optional): Final estimator. Defaults to sklearn.linear_model.LinearRegression.
         """
-        self.ticker = ticker
-        self.interval = interval
         self.estimators = estimators
         self.final_estimator = final_estimator
         self.data = data
-        if data is None:
-            self.data = self.download_data()
+        self.interval = interval
         
         if estimators is None:
             self.estimators = [
@@ -49,16 +46,6 @@ class StackingModel:
         self.rmse = 0
         self.r2 = 0
         print("Data size: ", self.data.shape[0])
-
-    def download_data(self):
-        """Fetch data from yfinance
-        """
-        end_date = datetime.datetime.now()
-        start_date = end_date - datetime.timedelta(days=59)
-
-        data = yf.download(self.ticker, start=start_date, end=end_date, interval=self.interval)
-        data = data.ffill() #* replace NaNs with the previous valid data
-        return data
 
     def compute_features(self):
         # EMA
