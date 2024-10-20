@@ -4,21 +4,32 @@ import time
 import requests
 import pandas as pd
 import datetime
+import yaml
+import json
 
-def get_data():
+def download_data():
     url = "https://api.finazon.io/latest/finazon/us_stocks_essential/time_series"
     
-    querystring = {"ticker":"AAPL","interval":"5m","page":"5","page_size":"1000","adjust":"all"}
+    querystring = {"ticker":"AAPL","interval":"5m","page":"5","page_size":"10","adjust":"all"}
     
-    headers = {"Authorization": "apikey"}
+    with open ("api_key.yml", "r") as file:
+        api_key = yaml.safe_load(file)
+        headers = {"Authorization": api_key["api_key"]}
     
     response = requests.get(url, headers=headers, params=querystring)
-    
-    print(len(response.json()))
-    print(type(response))
+    data = response.json()
+
+    pandas_data = [{"Datetime": x["t"],
+                    "Open": x["o"],
+                    "High": x["h"],
+                    "Low": x["l"],
+                    "Close": x["c"],
+                    "Volume": x["v"]
+                    } for x in data["data"]]
+    print(pandas_data)
 
 def main():
-    get_data()
+    download_data()
     # start_time = time.time()
     # model = StackingModel("NDX", "5m")
     # model.run()
