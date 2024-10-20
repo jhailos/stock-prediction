@@ -34,20 +34,21 @@ class StackingModel:
         self.estimators = estimators
         self.final_estimator = final_estimator
         self.data = data
-        if data == None:
+        if data is None:
             self.data = self.download_data()
         
-        if self.estimators == None:
+        if estimators is None:
             self.estimators = [
                 ('rf', RandomForestRegressor(n_estimators=100)),
                 ('svr', SVR(kernel='linear')),
                 ('ada', AdaBoostRegressor(n_estimators=100)),
                 ('xgb', XGBRegressor(n_estimators=100))
             ]
-        if self.final_estimator == None:
+        if final_estimator is None:
             self.final_estimator = LinearRegression()
         self.rmse = 0
         self.r2 = 0
+        print("Data size: ", self.data.shape[0])
 
     def download_data(self):
         """Fetch data from yfinance
@@ -57,7 +58,6 @@ class StackingModel:
 
         data = yf.download(self.ticker, start=start_date, end=end_date, interval=self.interval)
         data = data.ffill() #* replace NaNs with the previous valid data
-        print("Data size: ", data.shape[0])
         return data
 
     def compute_features(self):

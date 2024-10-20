@@ -11,15 +11,20 @@ import os
 def download_data(ticker):
     url = "https://api.finazon.io/latest/finazon/us_stocks_essential/time_series"
     ls = []
-    for i in range(5):
+    for i in range(30):
         querystring = {"ticker":f"{ticker}","interval":"5m","page":f"{i}","page_size":"1000","adjust":"all"}
         with open ("api_key.yml", "r") as file:
             api_key = yaml.safe_load(file)
             headers = {"Authorization": api_key["api_key"]}
-    
-        response = requests.get(url, headers=headers, params=querystring)
-        if response.status_code == 429:
-            raise('Used all calls given: wait a minute')
+        
+        while True:
+            response = requests.get(url, headers=headers, params=querystring)
+            if response.status_code == 429:
+                # raise RuntimeError('Used all calls given: wait a minute')
+                print(f"waiting 1 second. {i}/30")
+                time.sleep(1)
+            else:
+                break
         data = response.json()
 
         pandas_data = [{"Date": datetime.datetime.utcfromtimestamp(x["t"]),
@@ -44,13 +49,14 @@ def download_data(ticker):
 
 def get_csv(ticker):
     df = pd.read_csv(f'stock_data\{ticker}.csv', index_col='Date', parse_dates=True)
+    return df
 
 def main():
-    ticker = 'AAPL'
-    download_data(ticker)
-    get_csv(ticker)
     start_time = time.time()
-    model = StackingModel(ticker, "5m", data=get_csv(ticker))
+    ticker = 'AAPL'
+    # download_data(ticker)
+    stock_data = get_csv(ticker)
+    model = StackingModel(ticker, "5m", data=stock_data)
     model.run()
 
     # # multiprocessing (concurrent.futures)
@@ -70,8 +76,8 @@ def main():
     # for p in processes:
     #     p.join()
     
-    # end_time = time.time()
-    # print("Time taken: ", end_time-start_time)
+    end_time = time.time()
+    print("Time taken: ", end_time-start_time)
 
 if __name__ == "__main__":
     main()
