@@ -9,24 +9,34 @@ import json
 
 def download_data():
     url = "https://api.finazon.io/latest/finazon/us_stocks_essential/time_series"
+    ls = []
+    for i in range(5):
+        querystring = {"ticker":"AAPL","interval":"5m","page":f"{i}","page_size":"1000","adjust":"all"}
     
-    querystring = {"ticker":"AAPL","interval":"5m","page":"5","page_size":"10","adjust":"all"}
+        with open ("api_key.yml", "r") as file:
+            api_key = yaml.safe_load(file)
+            headers = {"Authorization": api_key["api_key"]}
     
-    with open ("api_key.yml", "r") as file:
-        api_key = yaml.safe_load(file)
-        headers = {"Authorization": api_key["api_key"]}
-    
-    response = requests.get(url, headers=headers, params=querystring)
-    data = response.json()
+        response = requests.get(url, headers=headers, params=querystring)
+        data = response.json()
 
-    pandas_data = [{"Datetime": x["t"],
-                    "Open": x["o"],
-                    "High": x["h"],
-                    "Low": x["l"],
-                    "Close": x["c"],
-                    "Volume": x["v"]
-                    } for x in data["data"]]
-    print(pandas_data)
+        pandas_data = [{"Date": datetime.datetime.utcfromtimestamp(x["t"]),
+                        "Open": x["o"],
+                        "High": x["h"],
+                        "Low": x["l"],
+                        "Close": x["c"],
+                        "Volume": x["v"]
+                        } for x in data["data"]]
+        for item in pandas_data:
+            ls.append(item)
+
+    df = pd.DataFrame(ls)
+    df['Date'] = pd.to_datetime(df['Date'])
+    df.set_index('Date', inplace=True)
+
+    df.to_csv('stock_data\data.txt')
+
+    return df
 
 def main():
     download_data()
