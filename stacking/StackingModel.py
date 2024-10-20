@@ -20,7 +20,7 @@ class StackingModel:
     
     """
 
-    def __init__(self, ticker: str, interval: str, estimators=None, final_estimator=None):
+    def __init__(self, ticker: str, interval: str, estimators=None, final_estimator=None, data=None):
         """_summary_
 
         Args:
@@ -33,7 +33,9 @@ class StackingModel:
         self.interval = interval
         self.estimators = estimators
         self.final_estimator = final_estimator
-        self.data = self.download_data()
+        if data == None:
+            self.data = self.download_data()
+        
         if self.estimators == None:
             self.estimators = [
                 ('rf', RandomForestRegressor(n_estimators=100)),

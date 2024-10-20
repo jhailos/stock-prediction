@@ -7,11 +7,11 @@ import datetime
 import yaml
 import json
 
-def download_data():
+def download_data(ticker):
     url = "https://api.finazon.io/latest/finazon/us_stocks_essential/time_series"
     ls = []
     for i in range(5):
-        querystring = {"ticker":"AAPL","interval":"5m","page":f"{i}","page_size":"1000","adjust":"all"}
+        querystring = {"ticker":f"{ticker}","interval":"5m","page":f"{i}","page_size":"1000","adjust":"all"}
     
         with open ("api_key.yml", "r") as file:
             api_key = yaml.safe_load(file)
@@ -39,10 +39,10 @@ def download_data():
     return df
 
 def main():
-    download_data()
-    # start_time = time.time()
-    # model = StackingModel("NDX", "5m")
-    # model.run()
+    ticker = 'AAPL'
+    start_time = time.time()
+    model = StackingModel(ticker, "5m", data=download_data(ticker))
+    model.run()
 
     # # multiprocessing (concurrent.futures)
     # with concurrent.futures.ProcessPoolExecutor() as executor:
@@ -61,8 +61,8 @@ def main():
     # for p in processes:
     #     p.join()
     
-    # end_time = time.time()
-    # print("Time taken: ", end_time-start_time)
+    end_time = time.time()
+    print("Time taken: ", end_time-start_time)
 
 if __name__ == "__main__":
     main()
