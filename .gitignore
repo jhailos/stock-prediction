@@ -1,3 +1,6 @@
+# API key
+api_key.yml
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
