@@ -1,4 +1,7 @@
 from StackingModel import StackingModel
+from ContextData import ContextData
+from StrategyYfinance import StrategyYfinance
+
 import concurrent.futures
 import time
 import requests
@@ -53,9 +56,11 @@ def get_csv(ticker):
 
 def main():
     start_time = time.time()
-    ticker = 'AAPL'
+    ticker = 'GOOG'
     # download_data(ticker)
-    stock_data = get_csv(ticker)
+    context = ContextData(ticker="AAPL", strategy=StrategyYfinance())
+    context.write_csv()
+    stock_data = context.read_csv()
     model = StackingModel(ticker, "5m", data=stock_data)
     model.run()
 
