@@ -47,23 +47,6 @@ class StackingModel:
         self.r2 = 0
         print("Data size: ", self.data.shape[0])
 
-    def compute_features(self):
-        # EMA
-        self.data['EMA12'] = self.data['Close'].ewm(span=12).mean()
-        self.data['EMA26'] = self.data['Close'].ewm(span=26).mean()
-
-        # MACD
-        self.data['MACD'] = self.data['EMA12'] + self.data['EMA26']
-
-        # MACD signal
-        self.data['MACD_signal'] = self.data['MACD'].ewm(span=9).mean()
-
-        # Price change
-        self.data['price_change'] = self.data['Close'].pct_change()
-
-        # Previous closing price
-        self.data['previous_close'] = self.data['Close'].shift(1)
-
     def train_model(self, x_train, y_train):
         pipeline = Pipeline([
             ('scaler', StandardScaler()),
@@ -151,8 +134,6 @@ class StackingModel:
         return future_timestamps, future_data[-1]
     
     def run(self):
-        # Compute features
-        self.compute_features()
 
         # Pre process
         x, y = self.data_preprocessing()
