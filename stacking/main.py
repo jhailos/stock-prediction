@@ -14,7 +14,7 @@ import os
 
 def main():
     start_time = time.time()
-    context = ContextData(ticker="^GSPC", strategy=StrategyYfinance(), days=59, interval="2m")
+    context = ContextData(ticker="AAPL", strategy=StrategyFinazon(), days=7, interval="30m")
     model = StackingModel(context.data, context.interval)
     rmse, rrmse, r2, predicted_price, last_price = model.run()
 

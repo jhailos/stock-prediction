@@ -93,6 +93,7 @@ class StackingModel:
         interval_mapping = {
             '1d': pd.Timedelta(days=1),
             '1h': pd.Timedelta(hours=1),
+            '30m': pd.Timedelta(minutes=30),
             '15m': pd.Timedelta(minutes=15),
             '5m': pd.Timedelta(minutes=5),
             '2m': pd.Timedelta(minutes=2),
@@ -102,7 +103,7 @@ class StackingModel:
         if self.interval in interval_mapping:
             return interval_mapping[self.interval]
         else:
-            raise ValueError("Interval mapping not found for the specified interval")
+            raise ValueError(f"Interval mapping not found for the specified interval: {self.interval}")
 
 
     def next_closing(self, model, scaler, steps=1):
@@ -159,5 +160,5 @@ class StackingModel:
         print("R2: ", self.r2)
         print(f"Price in next interval ({prediction_time[-1]}): {predicted_price}")
 
-        # return [rmse, r2, prediction_time, predicted_price]
+        return [self.rmse, rrmse, self.r2, predicted_price, self.data['Close'].iloc[0]]
         # return predicted_price
