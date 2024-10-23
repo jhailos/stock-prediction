@@ -45,7 +45,5 @@ class ContextData:
     def delete_after_hours(self):
         """Delete after market hours from data set
         """
-        print('After hours')
         market_hours = self.data.between_time(datetime.time(hour=9, minute=30), datetime.time(hour=16))
         market_hours = market_hours[market_hours.index.dayofweek < 5]
-        print(market_hours)
