@@ -54,5 +54,5 @@ class StrategyFinazon(StrategyData):
         df = pd.DataFrame(ls)
         df['Datetime'] = pd.to_datetime(df['Datetime'])
         df.set_index('Datetime', inplace=True)
-
+        df = df.ffill() #* replace NaNs with the previous valid data
         return df

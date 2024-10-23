@@ -13,7 +13,7 @@ import json
 import os
 
 def main():
-    context = ContextData(ticker="AAPL", strategy=StrategyFinazon(), days=59, interval="5m")
+    context = ContextData(ticker="AAPL", strategy=StrategyYfinance(), days=59, interval="2m")
     start_time = time.time()
     model = StackingModel(context.data, context.interval)
     rmse, rrmse, r2, predicted_price, last_price = model.run()
@@ -21,6 +21,7 @@ def main():
     print('---------------------------')
     lower_bound = predicted_price - rmse
     upper_bound = predicted_price + rmse
+    print('LAST PRICE: ', last_price)
     print("> Upper bound: ", upper_bound)
     print("> Actual: ", predicted_price)
     print("> Lower bound: ", lower_bound)
