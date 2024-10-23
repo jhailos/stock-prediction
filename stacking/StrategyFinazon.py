@@ -30,7 +30,6 @@ class StrategyFinazon(StrategyData):
                 while True:
                     response = requests.get(url, headers=headers, params=querystring)
                     if response.status_code == 429:
-                        # raise RuntimeError('Used all calls given: wait a minute')
                         print(f"waiting 1 second. {i} calls completed")
                         time.sleep(1)
                     else:
