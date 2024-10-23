@@ -12,7 +12,8 @@ from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import StackingRegressor
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.ensemble import AdaBoostRegressor
-from sklearn.svm import SVR
+from sklearn.ensemble import BaggingRegressor
+from sklearn.svm import SVR, LinearSVR
 from xgboost import XGBRegressor
 
 class StackingModel:
@@ -37,7 +38,7 @@ class StackingModel:
         if estimators is None:
             self.estimators = [
                 ('rf', RandomForestRegressor(n_estimators=100)),
-                ('svr', SVR(kernel='linear')),
+                ('bag', BaggingRegressor(estimator=LinearSVR(max_iter=1000000), n_estimators=100)),
                 ('ada', AdaBoostRegressor(n_estimators=100)),
                 ('xgb', XGBRegressor(n_estimators=100))
             ]
