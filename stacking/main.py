@@ -13,8 +13,8 @@ import json
 import os
 
 def main():
+    context = ContextData(ticker="AAPL", strategy=StrategyFinazon(), days=59, interval="5m")
     start_time = time.time()
-    context = ContextData(ticker="AAPL", strategy=StrategyFinazon(), days=7, interval="30m")
     model = StackingModel(context.data, context.interval)
     rmse, rrmse, r2, predicted_price, last_price = model.run()
 
@@ -24,10 +24,10 @@ def main():
     print("> Upper bound: ", upper_bound)
     print("> Actual: ", predicted_price)
     print("> Lower bound: ", lower_bound)
-    if predicted_price < lower_bound:
-        print(f'# Going down {last_price - predicted_price}')
-    elif predicted_price > upper_bound:
+    if last_price < lower_bound:
         print(f'# Going up by {predicted_price - last_price}')
+    elif last_price > upper_bound:
+        print(f'# Going down by {last_price - predicted_price}')
     else:
         print('# RMSE too high to make accurate prediction')
 
