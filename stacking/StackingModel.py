@@ -95,6 +95,7 @@ class StackingModel:
             '1h': pd.Timedelta(hours=1),
             '15m': pd.Timedelta(minutes=15),
             '5m': pd.Timedelta(minutes=5),
+            '2m': pd.Timedelta(minutes=2),
             '1m': pd.Timedelta(minutes=1)
         }
 
