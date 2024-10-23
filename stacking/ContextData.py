@@ -27,12 +27,12 @@ class ContextData:
 
     def compute_features(self):
         # EMA
-        daily_closes = self.data['Close'].resample('1D').last()
-        print(daily_closes)
-        daily_closes = daily_closes.ffill()
+        # daily_closes = self.data['Close'].resample('1D').last()
+        # print(daily_closes)
+        # daily_closes = daily_closes.ffill()
         self.data['EMA12'] = self.data['Close'].ewm(span=12*6.5*60/2).mean() # 12 days * 6.5 hours per day * min per hour
         self.data['EMA26'] = self.data['Close'].ewm(span=26*6.5*60/2).mean()
-        print(self.data['EMA12'])
+        # print(self.data['EMA12'])
         # MACD
         self.data['MACD'] = self.data['EMA12'] + self.data['EMA26']
 
