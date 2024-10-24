@@ -14,7 +14,7 @@ import json
 import os
 
 def main():
-    context = ContextData(ticker="NVDA", strategy=StrategyAlphaVantage(), days=100, interval="1m", market_hours_only=False)
+    context = ContextData(ticker="NVDA", strategy=StrategyYfinance(), days=59, interval="2m", market_hours_only=False)
     start_time = time.time()
     model = StackingModel(context.data, context.interval)
     rmse, rrmse, r2, predicted_price, last_price = model.run()
@@ -52,6 +52,7 @@ def main():
     #     p.join()
     
     end_time = time.time()
+    print('---------------------------')
     print("Time taken: ", end_time-start_time)
 
 if __name__ == "__main__":

@@ -34,7 +34,7 @@ class StackingModel:
         if estimators is None:
             self.estimators = [
                 ('rf', RandomForestRegressor(n_estimators=100)),
-                ('bag', BaggingRegressor(estimator=LinearSVR(max_iter=100000), n_estimators=100)),
+                ('bag', BaggingRegressor(estimator=LinearSVR(max_iter=1000000), n_estimators=100)),
                 ('ada', AdaBoostRegressor(n_estimators=100)),
                 ('xgb', XGBRegressor(n_estimators=100))
             ]
@@ -59,7 +59,7 @@ class StackingModel:
         return pipeline
 
     def data_preprocessing(self):
-        print('> Data preprocessing')
+        print('> Processing data')
         y = self.data['Close'].shift(-1) # Y is value to predict (price in the next interval)
         self.data['y'] = y
         self.data.dropna(inplace=True)
@@ -125,7 +125,8 @@ class StackingModel:
         
         # Predict closing price at future interval
         future_data = []
-        future_timestamps = [self.data.index[-1]]  # Timestamps of the most recent data
+        future_timestamps = [self.data.index[-1] + self.timedelta_interval()]  # Timestamps of the most recent data
+        
         for _ in range(steps):
             prediction = model.predict(most_recent_scaled)
             future_data.append(prediction[0])
@@ -133,6 +134,10 @@ class StackingModel:
             
             # Update the scaled data with the new prediction
             most_recent_scaled.iloc[0, -1] = prediction
+
+            previous_close = prediction[0]  # predicted closing price is the new previous_close
+
+            most_recent_scaled.iloc[0, 4] = previous_close - most_recent.iloc[0]['previous_close']  # 5th column is `price_change`
         
         return future_timestamps, future_data[-1]
     
@@ -154,12 +159,12 @@ class StackingModel:
         self.rmse, self.r2 = self.model_eval(model, x_test_scaled, y_test)
 
         # Inference
-        prediction_time, predicted_price = self.next_closing(model, scaler, steps=2)
+        prediction_time, predicted_price = self.next_closing(model, scaler, steps=1)
         rrmse = self.rmse/self.data['Close'].mean() * 100
         print("RMSE: ", self.rmse)
         print(f"RRMSE: {rrmse:.4f}%")
         print("R2: ", self.r2)
         print(f"Price in next interval ({prediction_time[-1]}): {predicted_price}")
 
-        return [self.rmse, rrmse, self.r2, predicted_price, self.data['Close'].iloc[0]]
+        return [self.rmse, rrmse, self.r2, predicted_price, self.data['Close'].iloc[-1]]
         # return predicted_price
