@@ -39,7 +39,7 @@ class StrategyFinazon(StrategyData):
                 if len(data["data"]) == 0:
                     break
 
-                pandas_data = [{"Datetime": datetime.datetime.utcfromtimestamp(x["t"]),
+                pandas_data = [{"Datetime": datetime.datetime.fromtimestamp(x["t"]),
                                 "Open": x["o"],
                                 "High": x["h"],
                                 "Low": x["l"],
@@ -54,5 +54,5 @@ class StrategyFinazon(StrategyData):
         df = pd.DataFrame(ls)
         df['Datetime'] = pd.to_datetime(df['Datetime'])
         df.set_index('Datetime', inplace=True)
-        df = df.ffill() #* replace NaNs with the previous valid data
+
         return df
