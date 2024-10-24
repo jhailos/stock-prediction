@@ -1,8 +1,4 @@
-import yfinance as yf
 import pandas as pd
-import numpy as np
-import datetime
-import concurrent.futures
 
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
@@ -38,7 +34,7 @@ class StackingModel:
         if estimators is None:
             self.estimators = [
                 ('rf', RandomForestRegressor(n_estimators=100)),
-                ('bag', BaggingRegressor(estimator=LinearSVR(max_iter=1000000), n_estimators=100)),
+                ('bag', BaggingRegressor(estimator=LinearSVR(max_iter=100000), n_estimators=100)),
                 ('ada', AdaBoostRegressor(n_estimators=100)),
                 ('xgb', XGBRegressor(n_estimators=100))
             ]
@@ -49,6 +45,7 @@ class StackingModel:
         print("Data size: ", self.data.shape[0])
 
     def train_model(self, x_train, y_train):
+        print('> Training model')
         pipeline = Pipeline([
             ('scaler', StandardScaler()),
             ('stacking', StackingRegressor(
@@ -62,20 +59,22 @@ class StackingModel:
         return pipeline
 
     def data_preprocessing(self):
+        print('> Data preprocessing')
         y = self.data['Close'].shift(-1) # Y is value to predict (price in the next interval)
         self.data['y'] = y
         self.data.dropna(inplace=True)
         x = self.data[['EMA12', 'EMA26', 'MACD', 'MACD_signal', 'price_change', 'previous_close']]
-
         return x, self.data['y']
 
     def scale_data(self, x_train, x_test, scaler):
+        print('> Scaling data')
         x_train_scaled = pd.DataFrame(scaler.fit_transform(x_train), columns=x_train.columns, index=x_train.index)
         x_test_scaled = pd.DataFrame(scaler.transform(x_test), columns=x_test.columns, index=x_test.index)
 
         return x_train_scaled, x_test_scaled
 
     def model_eval(self, model, x_test, y_test):
+        print('> Evaluating model')
         prediction = model.predict(x_test)
         rmse = root_mean_squared_error(y_test, prediction)
         r_squared = r2_score(y_test, prediction)
@@ -119,6 +118,7 @@ class StackingModel:
         - future_timestamps (list): Timestamps of the predicted closing prices
         - predicted_closing_price (float): Predicted closing price at the last future interval
         """
+        print('> Calculating next closing price')
         most_recent = pd.DataFrame([self.data.iloc[-1][['EMA12', 'EMA26', 'MACD', 'MACD_signal', 'price_change', 'previous_close']]])
         
         most_recent_scaled = pd.DataFrame(scaler.transform(most_recent), columns=most_recent.columns)
@@ -154,7 +154,7 @@ class StackingModel:
         self.rmse, self.r2 = self.model_eval(model, x_test_scaled, y_test)
 
         # Inference
-        prediction_time, predicted_price = self.next_closing(model, scaler)
+        prediction_time, predicted_price = self.next_closing(model, scaler, steps=2)
         rrmse = self.rmse/self.data['Close'].mean() * 100
         print("RMSE: ", self.rmse)
         print(f"RRMSE: {rrmse:.4f}%")
