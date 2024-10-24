@@ -12,8 +12,10 @@ class ContextData:
         self.days = days
         self.interval = interval
         self.data = self.strategy.download_data(ticker=ticker, days=days, interval=interval)
+        self.data.sort_index(inplace=True)
         if market_hours_only : self.delete_after_hours()
         self.compute_features()
+        print(self.data)
 
     def read_csv(self):
         return pd.read_csv(f'stock_data\{self.ticker}.csv', index_col='Datetime', parse_dates=True)
@@ -30,8 +32,8 @@ class ContextData:
         # daily_closes = self.data['Close'].resample('1D').last()
         # print(daily_closes)
         # daily_closes = daily_closes.ffill()
-        self.data['EMA12'] = self.data['Close'].ewm(span=12*6.5*60).mean() # 12 days * 6.5 hours per day * min per hour
-        self.data['EMA26'] = self.data['Close'].ewm(span=26*6.5*60).mean()
+        self.data['EMA12'] = self.data['Close'].ewm(span=12*6.5*60/2).mean() # 12 days * 6.5 hours per day * min per hour
+        self.data['EMA26'] = self.data['Close'].ewm(span=26*6.5*60/2).mean()
         # print(self.data['EMA12'])
         # MACD
         self.data['MACD'] = self.data['EMA12'] + self.data['EMA26']
