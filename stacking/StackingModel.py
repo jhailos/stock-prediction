@@ -1,4 +1,5 @@
 import pandas as pd
+from joblib import parallel_backend
 
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
@@ -54,7 +55,8 @@ class StackingModel:
         ])
         
         # Train Stacking Model
-        pipeline.fit(x_train, y_train)
+        with parallel_backend('threading'):
+            pipeline.fit(x_train, y_train)
         
         return pipeline
 
