@@ -6,12 +6,6 @@ from StrategyAlphaVantage import StrategyAlphaVantage
 
 import concurrent.futures
 import time
-import requests
-import pandas as pd
-import datetime
-import yaml
-import json
-import os
 
 def main():
     context = ContextData(ticker="NVDA", strategy=StrategyYfinance(), days=59, interval="2m", market_hours_only=False)
