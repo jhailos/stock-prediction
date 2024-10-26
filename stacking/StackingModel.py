@@ -45,7 +45,9 @@ class StackingModel:
         pipeline: Pipeline = Pipeline([
             ('scaler', StandardScaler()),
             ('stacking', StackingRegressor(
-                estimators=self.estimators, final_estimator=self.final_estimator
+                estimators=self.estimators,
+                final_estimator=self.final_estimator,
+                n_jobs=-1
             ))
         ])
         
@@ -60,7 +62,7 @@ class StackingModel:
         y = self.data['Close'].shift(-1) # Y is value to predict (price in the next interval)
         self.data['y'] = y
         self.data.dropna(inplace=True)
-        x = self.data[['EMA12', 'EMA26', 'MACD', 'MACD_signal', 'price_change', 'previous_close']]
+        x = self.data[['EMA12', 'EMA26', 'MACD', 'MACD_signal', 'price_change', 'previous_close', 'Close']]
         return x, self.data['y']
 
     def scale_data(self, x_train, x_test, scaler):
@@ -116,7 +118,7 @@ class StackingModel:
         - predicted_closing_price (float): Predicted closing price at the last future interval
         """
         print('> Calculating next closing price')
-        most_recent = pd.DataFrame([self.data.iloc[-1][['EMA12', 'EMA26', 'MACD', 'MACD_signal', 'price_change', 'previous_close']]])
+        most_recent = pd.DataFrame([self.data.iloc[-1][['EMA12', 'EMA26', 'MACD', 'MACD_signal', 'price_change', 'previous_close', 'Close']]])
         
         most_recent_scaled = pd.DataFrame(scaler.transform(most_recent), columns=most_recent.columns)
         
