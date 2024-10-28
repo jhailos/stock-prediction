@@ -52,3 +52,4 @@ class ContextData:
         """
         market_hours = self.data.between_time(datetime.time(hour=9, minute=30), datetime.time(hour=16))
         market_hours = market_hours[market_hours.index.dayofweek < 5]
+        self.data = market_hours
