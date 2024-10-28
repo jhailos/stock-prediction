@@ -27,30 +27,27 @@ class StackingModel:
             estimators (list, optional): List of estimators. Defaults to random forest, svr, adaboost, xgboost.
             final_estimator (_type_, optional): Final estimator. Defaults to sklearn.linear_model.LinearRegression.
         """
-        self.estimators = estimators
-        self.final_estimator = final_estimator
         self.data = data
         self.interval = interval
-        
-        if estimators is None:
-            self.estimators = [
-                ('rf', RandomForestRegressor(n_estimators=100)),
-                ('bag', BaggingRegressor(estimator=LinearSVR(max_iter=1000000), n_estimators=100)),
-                ('ada', AdaBoostRegressor(n_estimators=100)),
-                ('xgb', XGBRegressor(n_estimators=100))
-            ]
-        if final_estimator is None:
-            self.final_estimator = LinearRegression()
+        self.estimators = estimators or [
+            ('rf', RandomForestRegressor(n_estimators=100, n_jobs=-1)),
+            ('bag', BaggingRegressor(estimator=LinearSVR(max_iter=1000000), n_estimators=100, n_jobs=-1)),
+            ('ada', AdaBoostRegressor(n_estimators=100)),
+            ('xgb', XGBRegressor(n_estimators=100, n_jobs=-1))
+        ]
+        self.final_estimator = final_estimator or LinearRegression()
         self.rmse = 0
         self.r2 = 0
         print("Data size: ", self.data.shape[0])
 
     def train_model(self, x_train, y_train):
         print('> Training model')
-        pipeline = Pipeline([
+        pipeline: Pipeline = Pipeline([
             ('scaler', StandardScaler()),
             ('stacking', StackingRegressor(
-                estimators=self.estimators, final_estimator=self.final_estimator
+                estimators=self.estimators,
+                final_estimator=self.final_estimator,
+                n_jobs=-1
             ))
         ])
         
@@ -65,7 +62,7 @@ class StackingModel:
         y = self.data['Close'].shift(-1) # Y is value to predict (price in the next interval)
         self.data['y'] = y
         self.data.dropna(inplace=True)
-        x = self.data[['EMA12', 'EMA26', 'MACD', 'MACD_signal', 'price_change', 'previous_close']]
+        x = self.data[['EMA12', 'EMA26', 'MACD', 'MACD_signal', 'price_change', 'previous_close', 'Close']]
         return x, self.data['y']
 
     def scale_data(self, x_train, x_test, scaler):
@@ -121,7 +118,7 @@ class StackingModel:
         - predicted_closing_price (float): Predicted closing price at the last future interval
         """
         print('> Calculating next closing price')
-        most_recent = pd.DataFrame([self.data.iloc[-1][['EMA12', 'EMA26', 'MACD', 'MACD_signal', 'price_change', 'previous_close']]])
+        most_recent = pd.DataFrame([self.data.iloc[-1][['EMA12', 'EMA26', 'MACD', 'MACD_signal', 'price_change', 'previous_close', 'Close']]])
         
         most_recent_scaled = pd.DataFrame(scaler.transform(most_recent), columns=most_recent.columns)
         
