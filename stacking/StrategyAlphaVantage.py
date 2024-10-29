@@ -13,14 +13,22 @@ class StrategyAlphaVantage(StrategyData):
         with open("api_key.yml", "r") as file:
             api_key = yaml.safe_load(file)
             url = f'https://www.alphavantage.co/query'
-        
-            querystring = {
-                        "function": f"TIME_SERIES_INTRADAY",
-                        "symbol": ticker,
-                        "interval": {self.translate_interval(interval)},
-                        "apikey": api_key['alpha_vantage'],
-                        "outputsize": "full"
-                        }
+
+            if interval == '1d':
+                querystring = {
+                            "function": f"TIME_SERIES_DAILY",
+                            "symbol": ticker,
+                            "apikey": api_key['alpha_vantage'],
+                            "outputsize": "full"
+                            }
+            else:
+                querystring = {
+                            "function": f"TIME_SERIES_INTRADAY",
+                            "symbol": ticker,
+                            "interval": {self.translate_interval(interval)},
+                            "apikey": api_key['alpha_vantage'],
+                            "outputsize": "full"
+                            }
 
             response = requests.get(url, params=querystring)
 
@@ -62,6 +70,7 @@ class StrategyAlphaVantage(StrategyData):
             pd.Timedelta: The converted timedelta
         """
         interval_mapping = {
+            '1d': 'Daily',
             '1h': '60min',
             '30m': '30min',
             '15m': '15min',

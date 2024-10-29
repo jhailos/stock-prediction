@@ -62,7 +62,7 @@ class StackingModel:
         y = self.data['Close'].shift(-1) # Y is value to predict (price in the next interval)
         self.data['y'] = y
         self.data.dropna(inplace=True)
-        x = self.data[['EMA12', 'EMA26', 'MACD', 'MACD_signal', 'price_change', 'previous_close', 'Close']]
+        x = self.data[['EMA12', 'EMA26', 'MACD', 'MACD_signal', 'price_change', 'previous_close', 'Close', 'RSI']]
         return x, self.data['y']
 
     def scale_data(self, x_train, x_test, scaler):
@@ -118,28 +118,35 @@ class StackingModel:
         - predicted_closing_price (float): Predicted closing price at the last future interval
         """
         print('> Calculating next closing price')
-        most_recent = pd.DataFrame([self.data.iloc[-1][['EMA12', 'EMA26', 'MACD', 'MACD_signal', 'price_change', 'previous_close', 'Close']]])
-        
+        # Get the most recent data point as a DataFrame
+        most_recent = pd.DataFrame([self.data.iloc[-1][['EMA12', 'EMA26', 'MACD', 'MACD_signal', 'price_change', 'previous_close', 'Close', 'RSI']]])
+
+        # Scale the most recent data
         most_recent_scaled = pd.DataFrame(scaler.transform(most_recent), columns=most_recent.columns)
-        
-        # Predict closing price at future interval
+
+        # Set initial timestamp to the day after the last data point
+        future_timestamps = [self.data.index[-1] + self.timedelta_interval()]
+
         future_data = []
-        future_timestamps = [self.data.index[-1] + self.timedelta_interval()]  # Timestamps of the most recent data
-        
+
         for _ in range(steps):
+            # Predict the closing price for the next step
             prediction = model.predict(most_recent_scaled)
             future_data.append(prediction[0])
+
+            # Update the future timestamps to increment for the next prediction
             future_timestamps.append(future_timestamps[-1] + self.timedelta_interval())
-            
+
             # Update the scaled data with the new prediction
-            most_recent_scaled.iloc[0, -1] = prediction
+            most_recent_scaled.iloc[0, -1] = prediction  # Update 'Close' with prediction
+            most_recent_scaled.iloc[0, 4] = prediction[0] - most_recent.iloc[0]['previous_close']  # 'price_change'
 
-            previous_close = prediction[0]  # predicted closing price is the new previous_close
+            # Set the new predicted closing price as the previous close for the next loop
+            most_recent.iloc[0, -2] = prediction[0]  # previous_close
 
-            most_recent_scaled.iloc[0, 4] = previous_close - most_recent.iloc[0]['previous_close']  # 5th column is `price_change`
+        # Return the timestamps and the last predicted closing price
+        return future_timestamps[1:], future_data[-1]
         
-        return future_timestamps, future_data[-1]
-    
     def run(self):
 
         # Pre process
