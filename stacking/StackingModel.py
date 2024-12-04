@@ -41,13 +41,14 @@ class StackingModel:
         print("Data size: ", self.data.shape[0])
 
     def train_model(self, x_train, y_train):
-        print('> Training model')
+        print('> Training model', end='\r')
         pipeline: Pipeline = Pipeline([
             ('scaler', StandardScaler()),
             ('stacking', StackingRegressor(
                 estimators=self.estimators,
                 final_estimator=self.final_estimator,
-                n_jobs=-1
+                n_jobs=-1,
+                verbose=1
             ))
         ])
         
@@ -58,7 +59,7 @@ class StackingModel:
         return pipeline
 
     def data_preprocessing(self):
-        print('> Processing data')
+        print('> Processing data', end='\r')
         y = self.data['Close'].shift(-1) # Y is value to predict (price in the next interval)
         self.data['y'] = y
         self.data.dropna(inplace=True)
@@ -66,14 +67,14 @@ class StackingModel:
         return x, self.data['y']
 
     def scale_data(self, x_train, x_test, scaler):
-        print('> Scaling data')
+        print('> Scaling data', end='\r')
         x_train_scaled = pd.DataFrame(scaler.fit_transform(x_train), columns=x_train.columns, index=x_train.index)
         x_test_scaled = pd.DataFrame(scaler.transform(x_test), columns=x_test.columns, index=x_test.index)
 
         return x_train_scaled, x_test_scaled
 
     def model_eval(self, model, x_test, y_test):
-        print('> Evaluating model')
+        print('> Evaluating model', end='\r')
         prediction = model.predict(x_test)
         rmse = root_mean_squared_error(y_test, prediction)
         r_squared = r2_score(y_test, prediction)
