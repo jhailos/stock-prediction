@@ -16,6 +16,7 @@ class ContextData:
         if market_hours_only : self.delete_after_hours()
         self.compute_features()
         print(self.data)
+        self.delete_outliers()
 
     def read_csv(self):
         return pd.read_csv(f'stock_data\\{self.ticker}.csv', index_col='Datetime', parse_dates=True)
@@ -57,3 +58,10 @@ class ContextData:
         market_hours = self.data.between_time(datetime.time(hour=9, minute=30), datetime.time(hour=16))
         market_hours = market_hours[market_hours.index.dayofweek < 5]
         self.data = market_hours
+    
+    def delete_outliers(self):
+        # upper = self.data['Close'].mean() + 3 * self.data['Close'].std()
+        # lower = self.data['Close'].mean() - 3 * self.data['Close'].std()
+
+        # data = (self.data[self.data['Close'] > upper]) and (self.data[self.data['Close'] < lower])
+        pass
