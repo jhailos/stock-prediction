@@ -28,7 +28,7 @@ class StrategyAlpaca(StrategyData):
 
             bars = client.get_stock_bars(request_params)
             df = bars.df
-            print(df)
+            df = df.reset_index(level='symbol', drop=True)
             df.columns = map(str.capitalize, df.columns)
             return df
     
