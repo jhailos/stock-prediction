@@ -38,6 +38,7 @@ class StackingModel:
         self.final_estimator = final_estimator or LinearRegression()
         self.rmse = 0
         self.r2 = 0
+        print(self.data)
         print("Data size: ", self.data.shape[0])
 
     def train_model(self, x_train, y_train):
@@ -63,7 +64,7 @@ class StackingModel:
         y = self.data['Close'].shift(-1) # Y is value to predict (price in the next interval)
         self.data['y'] = y
         self.data.dropna(inplace=True)
-        x = self.data[['EMA12', 'EMA26', 'MACD', 'MACD_signal', 'price_change', 'previous_close', 'Close', 'RSI']]
+        x = self.data[['EMA12', 'EMA26', 'MACD', 'MACD_signal', 'price_change', 'previous_close', 'Close']]
         return x, self.data['y']
 
     def scale_data(self, x_train, x_test, scaler):
@@ -120,7 +121,7 @@ class StackingModel:
         """
         print('> Calculating next closing price')
         # Get the most recent data point as a DataFrame
-        most_recent = pd.DataFrame([self.data.iloc[-1][['EMA12', 'EMA26', 'MACD', 'MACD_signal', 'price_change', 'previous_close', 'Close', 'RSI']]])
+        most_recent = pd.DataFrame([self.data.iloc[-1][['EMA12', 'EMA26', 'MACD', 'MACD_signal', 'price_change', 'previous_close', 'Close']]])
 
         # Scale the most recent data
         most_recent_scaled = pd.DataFrame(scaler.transform(most_recent), columns=most_recent.columns)

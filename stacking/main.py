@@ -3,12 +3,13 @@ from ContextData import ContextData
 from StrategyYfinance import StrategyYfinance
 from StrategyFinazon import StrategyFinazon
 from StrategyAlphaVantage import StrategyAlphaVantage
+from StrategyAlpaca import StrategyAlpaca
 
 import time
 
 def main():
     print('>Fetching data')
-    context = ContextData(ticker="SPY", strategy=StrategyYfinance(), days=59, interval="2m", market_hours_only=False)
+    context = ContextData(ticker="SPY", strategy=StrategyAlpaca(), days=60, interval="1m", market_hours_only=False)
     start_time = time.time()
     model = StackingModel(context.data, context.interval)
     rmse, rrmse, r2, predicted_price, last_price = model.run()

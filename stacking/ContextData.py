@@ -15,7 +15,6 @@ class ContextData:
         self.data.sort_index(inplace=True)
         if market_hours_only : self.delete_after_hours()
         self.compute_features()
-        print(self.data)
         self.delete_outliers()
 
     def read_csv(self):
