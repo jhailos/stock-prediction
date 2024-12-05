@@ -8,7 +8,6 @@ AI driven stock price prediction bot. The model consists of an ensemble stacking
 - numpy==2.1.3
 - pandas==2.2.3
 - PyYAML==6.0.2
-- PyYAML==6.0.2
 - Requests==2.32.3
 - scikit_learn==1.5.2
 - xgboost==2.1.3
