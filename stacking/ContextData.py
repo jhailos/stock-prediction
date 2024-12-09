@@ -57,10 +57,7 @@ class ContextData:
         market_hours = self.data.between_time(datetime.time(hour=9, minute=30), datetime.time(hour=16))
         market_hours = market_hours[market_hours.index.dayofweek < 5]
         self.data = market_hours
-    
-    def delete_outliers(self):
-        # upper = self.data['Close'].mean() + 3 * self.data['Close'].std()
-        # lower = self.data['Close'].mean() - 3 * self.data['Close'].std()
 
-        # data = (self.data[self.data['Close'] > upper]) and (self.data[self.data['Close'] < lower])
-        pass
+    def delete_outliers(self, threshold=0.009):
+        # if absolute value of self.data['price_change'] > 0.01: delete row
+        self.data = self.data[abs(self.data['price_change']) <= threshold]

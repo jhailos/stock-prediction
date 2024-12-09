@@ -9,7 +9,7 @@ import time
 
 def main():
     print('>Fetching data')
-    context = ContextData(ticker="SPY", strategy=StrategyAlpaca(), days=60, interval="1m", market_hours_only=False)
+    context = ContextData(ticker="SPY", strategy=StrategyAlpaca(), days=1600, interval="1h", market_hours_only=False)
     start_time = time.time()
     model = StackingModel(context.data, context.interval)
     rmse, rrmse, r2, predicted_price, last_price = model.run()
