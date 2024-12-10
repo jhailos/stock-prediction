@@ -51,6 +51,8 @@ class ContextData:
         # Previous closing price
         self.data['previous_close'] = self.data['Close'].shift(1)
 
+        self.data.ffill()
+
     def delete_after_hours(self):
         """Delete after market hours from data set
         """
@@ -58,9 +60,14 @@ class ContextData:
         market_hours = market_hours[market_hours.index.dayofweek < 5]
         self.data = market_hours
     
-    def delete_outliers(self):
-        # upper = self.data['Close'].mean() + 3 * self.data['Close'].std()
-        # lower = self.data['Close'].mean() - 3 * self.data['Close'].std()
+    def delete_outliers(self, threshold=0.001): #! CHICKEM_Empanada<3
+        """
+        Delete outliers from dataset using a threshold on percent change in closing price.
+        Threshold should be higher for higher intervals.
 
-        # data = (self.data[self.data['Close'] > upper]) and (self.data[self.data['Close'] < lower])
-        pass
+        Args:
+        threshold (float): The threshold at which the data will be deleted
+
+        """
+
+        self.data = self.data[self.data['price_change'] < threshold ]
