@@ -73,7 +73,5 @@ class ContextData:
         upper_bound = self.data['price_change'].mean() + 3 * self.data['price_change'].std()
         lower_bound = self.data['price_change'].mean() - 3 * self.data['price_change'].std()
         
-        print("UPPER BOUND FOR STD", upper_bound)
-        print("LOWER BOUND FOR STD", lower_bound)
         self.data = self.data[self.data['price_change'] < upper_bound]
         self.data = self.data[self.data['price_change'] > lower_bound]
