@@ -60,7 +60,7 @@ class ContextData:
         market_hours = market_hours[market_hours.index.dayofweek < 5]
         self.data = market_hours
     
-    def delete_outliers(self, threshold=0.001): #! CHICKEM_Empanada<3
+    def delete_outliers(self, threshold=0.013): #! CHICKEM_Empanada<3
         """
         Delete outliers from dataset using a threshold on percent change in closing price.
         Threshold should be higher for higher intervals.
@@ -70,4 +70,4 @@ class ContextData:
 
         """
 
-        self.data = self.data[self.data['price_change'] < threshold ]
+        self.data = self.data[self.data['price_change'].abs() < threshold ]
