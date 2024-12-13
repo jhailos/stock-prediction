@@ -36,8 +36,6 @@ class StackingModel:
             ('xgb', XGBRegressor(n_estimators=100, n_jobs=-1))
         ]
         self.final_estimator = final_estimator or LinearRegression()
-        self.rmse = 0
-        self.r2 = 0
         print(self.data)
         print("Data size: ", self.data.shape[0])
 
@@ -164,15 +162,15 @@ class StackingModel:
         model = self.train_model(x_train_scaled, y_train)
 
         # Evaluate model
-        self.rmse, self.r2 = self.model_eval(model, x_test_scaled, y_test)
+        rmse, r2 = self.model_eval(model, x_test_scaled, y_test)
 
         # Inference
         prediction_time, predicted_price = self.next_closing(model, scaler, steps=1)
-        rrmse = self.rmse/self.data['Close'].mean() * 100
-        print("RMSE: ", self.rmse)
+        rrmse = rmse/self.data['Close'].mean() * 100
+        print("RMSE: ", rmse)
         print(f"RRMSE: {rrmse:.4f}%")
-        print("R2: ", self.r2)
+        print("R2: ", r2)
         print(f"Price in next interval ({prediction_time[-1]}): {predicted_price}")
 
-        return [self.rmse, rrmse, self.r2, predicted_price, self.data['Close'].iloc[-1]]
+        return [rmse, rrmse, r2, predicted_price, self.data['Close'].iloc[-1]]
         # return predicted_price
