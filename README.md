@@ -20,3 +20,9 @@ AI driven stock price prediction bot. The model consists of an ensemble stacking
 
 ## Sources
 - [A comparative study of ensemble learning algorithms for high-frequency trading](https://www.sciencedirect.com/science/article/pii/S2468227624001066#tbl0002)
+
+## Stacking model Diagram
+
+- Each model have n=100 estimators
+- Applied kernel trick on the Support Vector Machine in order to reduce computational load
+![image](stacking_diagram.png)
