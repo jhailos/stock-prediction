@@ -11,9 +11,18 @@ import time
 
 def main():
     print('>Fetching data')
-    context = ContextData(ticker="SPY", strategy=StrategyAlpaca(), days=20, interval="1m", market_hours_only=False)
+    context = ContextData(ticker="SPY", strategy=StrategyAlpaca(), days=10, interval="1m", market_hours_only=False)
+    context.write_csv()
     start_time = time.time()
     
+    plt.figure(figsize=(12, 6))
+    plt.plot(context.data['Close'], label=f'{context.ticker} Closing Price', linewidth=2)
+    plt.title(f'{context.ticker} Closing Prices Over Time')
+    plt.xlabel('Date')
+    plt.ylabel('Closing Price (USD)')
+    plt.legend()
+    plt.show()
+
     sns.displot(data=context.data, x="price_change", kde=True)
     plt.show()
 
