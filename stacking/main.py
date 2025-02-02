@@ -11,7 +11,7 @@ import time
 
 def main():
     print('>Fetching data')
-    context = ContextData(ticker="SPY", strategy=StrategyAlpaca(), days=15, interval="1m", market_hours_only=False)
+    context = ContextData(ticker="SPY", strategy=StrategyAlpaca(), days=20, interval="1m", market_hours_only=False)
     context.write_csv()
     start_time = time.time()
     
@@ -27,9 +27,13 @@ def main():
     plt.show()
 
     model = StackingModel(context.data, context.interval)
-    mae, mape, predicted_price, last_price = model.run()
+    rmse, rrmse, predicted_price, last_price, prediction_time = model.run()
 
     print('---------------------------')
+    print("RMSE: ", rmse)
+    print(f"RRMSE: {rrmse:.8f}%")
+    print(f"Price in next interval ({prediction_time}): {predicted_price}")
+    print(f"Last price: {last_price}")
 
     end_time = time.time()
     print('---------------------------')

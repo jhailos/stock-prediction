@@ -166,8 +166,5 @@ class StackingModel:
 
         # Inference
         prediction_time, predicted_price = self.next_closing(model, scaler, steps=1)
-        print("RMSE: ", rmse)
-        print(f"RRMSE: {rrmse:.8f}%")
-        print(f"Price in next interval ({prediction_time[-1]}): {predicted_price}")
 
-        return rmse, rrmse, predicted_price, self.data['Close'].iloc[-1]
+        return rmse, rrmse, predicted_price, self.data['Close'].iloc[-1], prediction_time[-1]

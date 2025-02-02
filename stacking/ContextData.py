@@ -16,7 +16,7 @@ class ContextData:
         self.data.sort_index(inplace=True)
         if market_hours_only : self.delete_after_hours()
         self.compute_features()
-        # self.delete_outliers()
+        self.delete_outliers()
 
     def read_csv(self):
         return pd.read_csv(f'stock_data\\{self.ticker}.csv', index_col='Datetime', parse_dates=True)
