@@ -3,8 +3,8 @@ from joblib import parallel_backend
 
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import root_mean_squared_error, r2_score
+from sklearn.model_selection import TimeSeriesSplit, train_test_split
+from sklearn.metrics import mean_absolute_error, mean_absolute_percentage_error, root_mean_squared_error, r2_score
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import StackingRegressor
 from sklearn.ensemble import RandomForestRegressor
@@ -59,11 +59,16 @@ class StackingModel:
 
     def data_preprocessing(self):
         print('> Processing data', end='\r')
-        y = self.data['Close'].shift(-1) # Y is value to predict (price in the next interval)
-        self.data['y'] = y
+        # Create lagged features for time series
+        self.data['Close_lag1'] = self.data['Close'].shift(1)
+        self.data['Close_lag2'] = self.data['Close'].shift(2)
+        self.data['Close_lag3'] = self.data['Close'].shift(3)
         self.data.dropna(inplace=True)
-        x = self.data[['EMA12', 'EMA26', 'MACD', 'MACD_signal', 'price_change', 'previous_close', 'Close']]
-        return x, self.data['y']
+
+        # Define features and target
+        x = self.data[['EMA12', 'EMA26', 'MACD', 'MACD_signal', 'price_change', 'previous_close', 'Close_lag1', 'Close_lag2', 'Close_lag3']]
+        y = self.data['Close']
+        return x, y
 
     def scale_data(self, x_train, x_test, scaler):
         print('> Scaling data', end='\r')
@@ -76,9 +81,9 @@ class StackingModel:
         print('> Evaluating model', end='\r')
         prediction = model.predict(x_test)
         rmse = root_mean_squared_error(y_test, prediction)
-        r_squared = r2_score(y_test, prediction)
-
-        return rmse, r_squared
+        rrmse = root_mean_squared_error(y_test, prediction) / self.data['Close'].mean()
+        
+        return rmse, rrmse
 
     def timedelta_interval(self):
         """Converts the `self.interval` string to pd.Timedelta 
@@ -118,33 +123,24 @@ class StackingModel:
         - predicted_closing_price (float): Predicted closing price at the last future interval
         """
         print('> Calculating next closing price')
-        # Get the most recent data point as a DataFrame
-        most_recent = pd.DataFrame([self.data.iloc[-1][['EMA12', 'EMA26', 'MACD', 'MACD_signal', 'price_change', 'previous_close', 'Close']]])
-
-        # Scale the most recent data
+        most_recent = pd.DataFrame([self.data.iloc[-1][['EMA12', 'EMA26', 'MACD', 'MACD_signal', 'price_change', 'previous_close', 'Close_lag1', 'Close_lag2', 'Close_lag3']]])
         most_recent_scaled = pd.DataFrame(scaler.transform(most_recent), columns=most_recent.columns)
 
-        # Set initial timestamp to the day after the last data point
         future_timestamps = [self.data.index[-1] + self.timedelta_interval()]
-
         future_data = []
 
         for _ in range(steps):
-            # Predict the closing price for the next step
             prediction = model.predict(most_recent_scaled)
             future_data.append(prediction[0])
 
-            # Update the future timestamps to increment for the next prediction
+            # Update the future timestamps
             future_timestamps.append(future_timestamps[-1] + self.timedelta_interval())
 
             # Update the scaled data with the new prediction
-            most_recent_scaled.iloc[0, -1] = prediction  # Update 'Close' with prediction
-            most_recent_scaled.iloc[0, 4] = prediction[0] - most_recent.iloc[0]['previous_close']  # 'price_change'
+            most_recent_scaled.iloc[0, -1] = prediction  # Update 'Close_lag1'
+            most_recent_scaled.iloc[0, -2] = most_recent_scaled.iloc[0, -1]  # Update 'Close_lag2'
+            most_recent_scaled.iloc[0, -3] = most_recent_scaled.iloc[0, -2]  # Update 'Close_lag3'
 
-            # Set the new predicted closing price as the previous close for the next loop
-            most_recent.iloc[0, -2] = prediction[0]  # previous_close
-
-        # Return the timestamps and the last predicted closing price
         return future_timestamps[1:], future_data[-1]
         
     def run(self):
@@ -152,25 +148,26 @@ class StackingModel:
         # Pre process
         x, y = self.data_preprocessing()
 
-        # Scaler
-        scaler = StandardScaler()
-        x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2)
+        tss = TimeSeriesSplit(n_splits=5)
 
+        for train_index, test_index in tss.split(self.data):
+            x_train, x_test = x.iloc[train_index], x.iloc[test_index]
+            y_train, y_test = y.iloc[train_index], y.iloc[test_index]
+
+        # Scale data
+        scaler = StandardScaler()
         x_train_scaled, x_test_scaled = self.scale_data(x_train, x_test, scaler)
 
         # Train model
         model = self.train_model(x_train_scaled, y_train)
 
         # Evaluate model
-        rmse, r2 = self.model_eval(model, x_test_scaled, y_test)
+        rmse, rrmse = self.model_eval(model, x_test_scaled, y_test)
 
         # Inference
         prediction_time, predicted_price = self.next_closing(model, scaler, steps=1)
-        rrmse = rmse/self.data['Close'].mean() * 100
         print("RMSE: ", rmse)
-        print(f"RRMSE: {rrmse:.4f}%")
-        print("R2: ", r2)
+        print(f"RRMSE: {rrmse:.8f}%")
         print(f"Price in next interval ({prediction_time[-1]}): {predicted_price}")
 
-        return [rmse, rrmse, r2, predicted_price, self.data['Close'].iloc[-1]]
-        # return predicted_price
+        return rmse, rrmse, predicted_price, self.data['Close'].iloc[-1]

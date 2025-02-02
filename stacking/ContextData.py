@@ -86,3 +86,5 @@ class ContextData:
         
         self.data = self.data[self.data['price_change'] < upper_bound]
         self.data = self.data[self.data['price_change'] > lower_bound]
+
+        self.handle_missing_date()
