@@ -12,10 +12,11 @@ class ContextData:
         self.days = days
         self.interval = interval
         self.data = self.strategy.download_data(ticker=ticker, days=days, interval=interval)
+        self.handle_missing_date()
         self.data.sort_index(inplace=True)
         if market_hours_only : self.delete_after_hours()
         self.compute_features()
-        self.delete_outliers()
+        # self.delete_outliers()
 
     def read_csv(self):
         return pd.read_csv(f'stock_data\\{self.ticker}.csv', index_col='Datetime', parse_dates=True)
@@ -27,10 +28,20 @@ class ContextData:
             os.mkdir(outdir)
         self.data.to_csv(os.path.join(outdir, outfile))
 
+    def handle_missing_date(self):
+        """Adds the missing data points
+        """
+        # Resample to 1-minute frequency (in case of gaps)
+        data_resampled = self.data.resample('min').asfreq()
+        # Fill missing values using linear interpolation
+        data_filled = data_resampled.interpolate(method='linear')
+
+        self.data = data_filled
+
     def compute_features(self):
         # EMA
-        self.data['EMA12'] = self.data['Close'].ewm(span=math.ceil(12*6.5*60/2)).mean() # 12 days * 6.5 hours per day * min per hour
-        self.data['EMA26'] = self.data['Close'].ewm(span=math.ceil(26*6.5*60/2)).mean()
+        self.data['EMA12'] = self.data['Close'].ewm(span=math.ceil(12*6.5*60)).mean() # 12 days * 6.5 hours per day * min per hour
+        self.data['EMA26'] = self.data['Close'].ewm(span=math.ceil(26*6.5*60)).mean()
 
         # MACD
         self.data['MACD'] = self.data['EMA12'] + self.data['EMA26']
@@ -40,8 +51,8 @@ class ContextData:
 
         #RSI
         delta = self.data['Close'].diff()
-        gain = (delta.where(delta > 0, 0)).rolling(window=math.ceil(14*6.5*60/2)).mean() # 14 days * 6.5 hours per day * min per hour
-        loss = (-delta.where(delta < 0, 0)).rolling(window=math.ceil(14*6.5*60/2)).mean()
+        gain = (delta.where(delta > 0, 0)).rolling(window=math.ceil(14*6.5*60)).mean() # 14 days * 6.5 hours per day * min per hour
+        loss = (-delta.where(delta < 0, 0)).rolling(window=math.ceil(14*6.5*60)).mean()
         relative_strength = gain / loss
         self.data['RSI'] = 100 - (100 / (1 + relative_strength))
 
@@ -51,7 +62,7 @@ class ContextData:
         # Previous closing price
         self.data['previous_close'] = self.data['Close'].shift(1)
 
-        self.data.ffill()
+        # self.data.ffill()
 
     def delete_after_hours(self):
         """Delete after market hours from data set
