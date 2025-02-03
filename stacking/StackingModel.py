@@ -82,8 +82,9 @@ class StackingModel:
         prediction = model.predict(x_test)
         rmse = root_mean_squared_error(y_test, prediction)
         rrmse = root_mean_squared_error(y_test, prediction) / self.data['Close'].mean()
+        r2 = r2_score(y_test, prediction)
         
-        return rmse, rrmse
+        return rmse, rrmse, r2
 
     def timedelta_interval(self):
         """Converts the `self.interval` string to pd.Timedelta 
@@ -162,9 +163,9 @@ class StackingModel:
         model = self.train_model(x_train_scaled, y_train)
 
         # Evaluate model
-        rmse, rrmse = self.model_eval(model, x_test_scaled, y_test)
+        rmse, rrmse, r2 = self.model_eval(model, x_test_scaled, y_test)
 
         # Inference
         prediction_time, predicted_price = self.next_closing(model, scaler, steps=1)
 
-        return rmse, rrmse, predicted_price, self.data['Close'].iloc[-1], prediction_time[-1]
+        return rmse, rrmse, r2, predicted_price, self.data['Close'].iloc[-1], prediction_time[-1]
