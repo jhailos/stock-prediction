@@ -4,7 +4,8 @@ from joblib import parallel_backend
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import TimeSeriesSplit, train_test_split
-from sklearn.metrics import mean_absolute_error, mean_absolute_percentage_error, root_mean_squared_error, r2_score
+from sklearn.metrics import mean_absolute_error, mean_absolute_percentage_error, root_mean_squared_error, r2_score, make_scorer
+from sklearn.model_selection import cross_val_score
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import StackingRegressor
 from sklearn.ensemble import RandomForestRegressor
@@ -39,8 +40,14 @@ class StackingModel:
         print(self.data)
         print("Data size: ", self.data.shape[0])
 
-    def train_model(self, x_train, y_train):
+    def train_model(self, x, y):
         print('> Training model', end='\r')
+
+        scoring = {
+            "RMSE": 'neg_root_mean_squared_error',
+            "R2": 'r2',
+        }
+
         pipeline: Pipeline = Pipeline([
             ('scaler', StandardScaler()),
             ('stacking', StackingRegressor(
@@ -51,11 +58,22 @@ class StackingModel:
             ))
         ])
         
+        tss = TimeSeriesSplit(n_splits=5)
+
+        cv_scores = cross_val_score(
+            pipeline,
+            x,
+            y,
+            cv=tss,
+            scoring=scoring['RMSE'],
+            n_jobs=-1
+        )
+
         # Train Stacking Model
         with parallel_backend('threading'):
-            pipeline.fit(x_train, y_train)
+            pipeline.fit(x, y)
         
-        return pipeline
+        return pipeline, cv_scores
 
     def data_preprocessing(self):
         print('> Processing data', end='\r')
@@ -149,23 +167,13 @@ class StackingModel:
         # Pre process
         x, y = self.data_preprocessing()
 
-        tss = TimeSeriesSplit(n_splits=5)
-
-        for train_index, test_index in tss.split(self.data):
-            x_train, x_test = x.iloc[train_index], x.iloc[test_index]
-            y_train, y_test = y.iloc[train_index], y.iloc[test_index]
-
-        # Scale data
-        scaler = StandardScaler()
-        x_train_scaled, x_test_scaled = self.scale_data(x_train, x_test, scaler)
-
         # Train model
-        model = self.train_model(x_train_scaled, y_train)
+        model, cv_scores = self.train_model(x, y)
 
-        # Evaluate model
-        rmse, rrmse, r2 = self.model_eval(model, x_test_scaled, y_test)
+        # # Evaluate model
+        # rmse, rrmse, r2 = self.model_eval(model, x_test_scaled, y_test)
 
         # Inference
-        prediction_time, predicted_price = self.next_closing(model, scaler, steps=1)
+        prediction_time, predicted_price = self.next_closing(model, model.named_steps['scaler'], steps=1)
 
-        return rmse, rrmse, r2, predicted_price, self.data['Close'].iloc[-1], prediction_time[-1]
+        return cv_scores, predicted_price, self.data['Close'].iloc[-1], prediction_time[-1]

@@ -43,12 +43,13 @@ def main():
 
 
     model = StackingModel(context.data, context.interval)
-    rmse, rrmse, r2, predicted_price, last_price, prediction_time = model.run()
+    cv_scores, predicted_price, last_price, prediction_time = model.run()
 
     print('---------------------------')
-    print("RMSE: ", rmse)
-    print(f"RRMSE: {rrmse:.8f}%")
-    print(f"R^2: {r2:.8f}%")
+    # print("RMSE: ", rmse)
+    # print(f"RRMSE: {rrmse:.8f}%")
+    # print(f"R^2: {r2:.8f}%")
+    print(cv_scores)
     print(f"Price in next interval ({prediction_time}): {predicted_price}")
     print(f"Last price: {last_price}")
 
