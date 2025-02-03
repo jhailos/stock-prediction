@@ -12,7 +12,7 @@ class ContextData:
         self.days = days
         self.interval = interval
         self.data = self.strategy.download_data(ticker=ticker, days=days, interval=interval)
-        self.handle_missing_date()
+        # self.handle_missing_date()
         self.data.sort_index(inplace=True)
         if market_hours_only : self.delete_after_hours()
         self.compute_features()
@@ -32,7 +32,7 @@ class ContextData:
         """Adds the missing data points
         """
         # Resample to 1-minute frequency (in case of gaps)
-        data_resampled = self.data.resample('min').asfreq()
+        data_resampled = self.data.resample('D').asfreq()
         # Fill missing values using linear interpolation
         data_filled = data_resampled.interpolate(method='linear')
 
@@ -87,4 +87,4 @@ class ContextData:
         self.data = self.data[self.data['price_change'] < upper_bound]
         self.data = self.data[self.data['price_change'] > lower_bound]
 
-        self.handle_missing_date()
+        # self.handle_missing_date()
