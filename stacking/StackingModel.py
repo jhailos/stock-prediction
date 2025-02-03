@@ -13,6 +13,7 @@ from sklearn.ensemble import AdaBoostRegressor
 from sklearn.ensemble import BaggingRegressor
 from sklearn.svm import SVR, LinearSVR
 from xgboost import XGBRegressor
+import numpy as np
 
 class StackingModel:
     """
@@ -60,20 +61,24 @@ class StackingModel:
         
         tss = TimeSeriesSplit(n_splits=5)
 
-        cv_scores = cross_val_score(
-            pipeline,
-            x,
-            y,
-            cv=tss,
-            scoring=scoring['RMSE'],
-            n_jobs=-1
-        )
+        scores = dict()
+
+        for score in scoring:
+            cv_scores = cross_val_score(
+                pipeline,
+                x,
+                y,
+                cv=tss,
+                scoring=scoring[score],
+                n_jobs=-1
+            )
+            scores[score] = cv_scores
 
         # Train Stacking Model
         with parallel_backend('threading'):
             pipeline.fit(x, y)
         
-        return pipeline, cv_scores
+        return pipeline, scores
 
     def data_preprocessing(self):
         print('> Processing data', end='\r')
@@ -94,15 +99,6 @@ class StackingModel:
         x_test_scaled = pd.DataFrame(scaler.transform(x_test), columns=x_test.columns, index=x_test.index)
 
         return x_train_scaled, x_test_scaled
-
-    def model_eval(self, model, x_test, y_test):
-        print('> Evaluating model', end='\r')
-        prediction = model.predict(x_test)
-        rmse = root_mean_squared_error(y_test, prediction)
-        rrmse = root_mean_squared_error(y_test, prediction) / self.data['Close'].mean()
-        r2 = r2_score(y_test, prediction)
-        
-        return rmse, rrmse, r2
 
     def timedelta_interval(self):
         """Converts the `self.interval` string to pd.Timedelta 
@@ -170,10 +166,14 @@ class StackingModel:
         # Train model
         model, cv_scores = self.train_model(x, y)
 
-        # # Evaluate model
-        # rmse, rrmse, r2 = self.model_eval(model, x_test_scaled, y_test)
-
         # Inference
         prediction_time, predicted_price = self.next_closing(model, model.named_steps['scaler'], steps=1)
 
-        return cv_scores, predicted_price, self.data['Close'].iloc[-1], prediction_time[-1]
+        scores = dict()
+
+        for score in cv_scores:
+            scores[score] = np.array(cv_scores[score]).mean()
+        
+        print(cv_scores)
+
+        return scores, predicted_price, self.data['Close'].iloc[-1], prediction_time[-1]
